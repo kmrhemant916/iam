@@ -2,7 +2,7 @@ service:
   port: "8080"
 database:
   name: iam
-  password: altair
-  host: "127.0.0.1"
+  password: admin
+  host: localhost
   port: "3306"
   username: root

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/kmrhemant916/iam/database"
-	"github.com/kmrhemant916/iam/models"
 	"github.com/kmrhemant916/iam/routes"
 	"github.com/kmrhemant916/iam/utils"
 )
@@ -21,6 +20,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	db.AutoMigrate(&models.Permission{})
+	defer func() {
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Close()
+		}
+	}()
+	utils.InitialiseServices(db)
 	http.ListenAndServe(":"+c.Service.Port, r)
 }

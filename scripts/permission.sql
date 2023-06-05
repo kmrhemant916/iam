@@ -1,0 +1,1 @@
+INSERT IGNORE INTO permissions (name) VALUES ('Create'), ('Read'), ('Update'), ('Delete');

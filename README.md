@@ -15,3 +15,7 @@
   * Reader
     * Permission
       * READ
+
+```
+docker run --name mysql -v $(pwd)/Documents/github/mysql:/var/lib/mysql  -e MYSQL_ROOT_PASSWORD=admin -p 3306:3306 -d mysql:latest
+```

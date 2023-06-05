@@ -8,7 +8,7 @@ import (
 
 func SetupRoutes() (*chi.Mux){
 	router := chi.NewRouter()
-	router.Get("/", controllers.Register)
+	router.Post("/register", controllers.Register)
 
 	return router
 }
