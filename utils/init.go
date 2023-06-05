@@ -11,6 +11,8 @@ import (
 
 var scripts = []string{
 	"scripts/permission.sql",
+	"scripts/role.sql",
+	"scripts/rolePermission.sql",
 }
 
 func InitialiseServices(db *gorm.DB) {
@@ -31,6 +33,7 @@ func DatabaseMigration(db *gorm.DB) {
 func Createtable(db *gorm.DB) {
 	db.AutoMigrate(models.Permission{})
 	db.AutoMigrate(models.Role{})
+	db.AutoMigrate(models.RolePermission{})
 }
 
 func GetAbsPath(p string) (string, error) {
