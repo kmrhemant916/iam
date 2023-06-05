@@ -34,6 +34,7 @@ func Createtable(db *gorm.DB) {
 	db.AutoMigrate(models.Permission{})
 	db.AutoMigrate(models.Role{})
 	db.AutoMigrate(models.RolePermission{})
+	db.AutoMigrate(models.User{})
 }
 
 func GetAbsPath(p string) (string, error) {
