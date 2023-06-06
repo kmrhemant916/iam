@@ -3,15 +3,11 @@ package routes
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/kmrhemant916/iam/controllers"
-	"github.com/kmrhemant916/iam/database"
+	"gorm.io/gorm"
 )
 
 
-func SetupRoutes() (*chi.Mux){
-	db,err := database.Connection()
-	if err != nil {
-		panic(err)
-	}
+func SetupRoutes(db *gorm.DB) (*chi.Mux){
 	app := &controllers.App{
 		DB: db,
 	}

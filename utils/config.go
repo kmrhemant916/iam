@@ -10,14 +10,14 @@ import (
 type Config struct {
     Service struct {
         Port string `yaml:"port"`
-    }
+    } `yaml:"service"`
     Database struct {
 		Name string `yaml:"name"`
 		Password string `yaml:"password"`
 		Host string `yaml:"host"`
 		Port string `yaml:"port"`
 		Username string `yaml:"username"`
-	}
+	} `yaml:"database"`
 }
 
 func (c *Config) ReadConf(f string) (*Config, error) {

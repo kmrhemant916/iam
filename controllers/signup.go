@@ -33,6 +33,8 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 			"message": "User already exist",
 		}
 		jsonResponse, _ := json.Marshal(response)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
 		w.Write(jsonResponse)
 		return
 	}
