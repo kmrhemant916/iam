@@ -18,6 +18,12 @@ type Config struct {
 		Port string `yaml:"port"`
 		Username string `yaml:"username"`
 	} `yaml:"database"`
+    Rabbitmq struct {
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+		Host string `yaml:"host"`
+		Port string `yaml:"port"`
+	} `yaml:"rabbitmq"`
 }
 
 func (c *Config) ReadConf(f string) (*Config, error) {
