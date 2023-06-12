@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/kmrhemant916/iam/database"
+	"github.com/kmrhemant916/iam/helpers"
 	"github.com/kmrhemant916/iam/rabbitmq"
 	"github.com/kmrhemant916/iam/routes"
-	"github.com/kmrhemant916/iam/utils"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 )
 
 func main() {
-	var config utils.Config
+	var config helpers.Config
 	c, err:= config.ReadConf(Config)
     if err != nil {
         panic(err)
@@ -36,6 +36,6 @@ func main() {
 	}
 	defer conn.Close()
 	r := routes.SetupRoutes(db, conn)
-	utils.InitialiseServices(db)
+	helpers.InitialiseServices(db)
 	http.ListenAndServe(":"+c.Service.Port, r)
 }

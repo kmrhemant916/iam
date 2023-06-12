@@ -6,7 +6,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/kmrhemant916/iam/database"
-	"github.com/kmrhemant916/iam/utils"
+	"github.com/kmrhemant916/iam/helpers"
+	"github.com/kmrhemant916/iam/rabbitmq"
 )
 
 const (
@@ -20,7 +21,7 @@ func TestAppRoutes(t *testing.T) {
 	}{
 		{"/signup", "POST"},
 	}
-	var config utils.Config
+	var config helpers.Config
 	c, err:= config.ReadConf(Config)
     if err != nil {
         panic(err)
@@ -35,7 +36,13 @@ func TestAppRoutes(t *testing.T) {
 			sqlDB.Close()
 		}
 	}()
-	mux := SetupRoutes(db)
+	rabbitmqConfig := c.Rabbitmq
+	rabbitConn, err := rabbitmq.Connection(rabbitmqConfig.Username, rabbitmqConfig.Password, rabbitmqConfig.Host, rabbitmqConfig.Port)
+	if err != nil {
+		panic(err)
+	}
+	defer rabbitConn.Close()
+	mux := SetupRoutes(db, rabbitConn)
 	for _, route := range registered {
 		// Check to see if the route exists
 		if !routeExists(route.route, route.method, mux) {

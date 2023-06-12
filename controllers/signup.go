@@ -8,16 +8,23 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kmrhemant916/iam/helpers"
 	"github.com/kmrhemant916/iam/models"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-type UserInput struct {
+type RequestPayload struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Organization string `json:"organization"`
+}
+
+type MailPayload struct {
+	To string `json:"to"`
+	From string `json:"from"`
+	Body string `json:"body"`
 }
 
 type App struct {
@@ -26,23 +33,22 @@ type App struct {
 }
 
 func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
-	var input UserInput
-	err := json.NewDecoder(r.Body).Decode(&input)
+	var requestPayload RequestPayload
+	err := json.NewDecoder(r.Body).Decode(&requestPayload)
 	if err != nil {
 		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
 		return
 	}
 	id := uuid.New()
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(requestPayload.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	user := models.User{ID: id, Email: input.Email, Password: string(hashedPassword)}
-	organization := models.Organization{Name: input.Organization}
+	user := models.User{ID: id, Email: requestPayload.Email, Password: string(hashedPassword)}
+	organization := models.Organization{Name: requestPayload.Organization}
 	userResult := app.DB.Create(&user)
-	organizationResult := app.DB.Create(&organization)
-	if userResult.Error != nil ||  organizationResult.Error != nil {
+	if userResult.Error != nil {
 		response := map[string]interface{}{
 			"message": "Internal server error",
 		}
@@ -51,8 +57,22 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(jsonResponse)
 		return
+	} else {
+		organizationResult := app.DB.Create(&organization)
+		if organizationResult.Error != nil {
+			helpers.StatusInternalServerErrorResponse(w,r)
+		}
 	}
-	app.SendEmail("Welcome "+input.Email)
+	mailPayload := MailPayload{
+		To: "hemank",
+		From: "ddd",
+		Body: "sss",
+	}
+	body, err := json.Marshal(mailPayload)
+	if err != nil {
+		log.Fatalf("Failed to marshal message: %s", err)
+	}
+	app.SendEmail(body)
 	response := map[string]interface{}{
 		"message": "User stored successfully",
 	}
@@ -62,7 +82,7 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResponse)
 }
 
-func (app *App) SendEmail(body string) {
+func (app *App) SendEmail(body []byte) {
 	ch, err := app.Conn.Channel()
 	if err != nil {
 		panic(err)
@@ -88,7 +108,7 @@ func (app *App) SendEmail(body string) {
 	  false,  // mandatory
 	  false,  // immediate
 	  amqp.Publishing {
-		ContentType: "text/plain",
+		ContentType: "application/json",
 		Body:        []byte(body),
 	  })
 	if err != nil {
