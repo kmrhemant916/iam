@@ -24,6 +24,8 @@ type Config struct {
 		Host string `yaml:"host"`
 		Port string `yaml:"port"`
 	} `yaml:"rabbitmq"`
+	Roles []string `yaml:"roles"`
+	Permissions []string `yaml:"permissions"`
 }
 
 func (c *Config) ReadConf(f string) (*Config, error) {

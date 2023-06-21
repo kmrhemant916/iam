@@ -17,7 +17,7 @@ var scripts = []string{
 
 func InitialiseServices(db *gorm.DB) {
 	Createtable(db)
-	DatabaseMigration(db)
+	// DatabaseMigration(db)
 }
 
 func DatabaseMigration(db *gorm.DB) {
