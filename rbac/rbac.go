@@ -7,6 +7,14 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	ErrPermissionInUse     = errors.New("Cannot delete assigned permission")
+	ErrPermissionNotFound  = errors.New("Permission not found")
+	ErrRoleAlreadyAssigned = errors.New("This role is already assigned to the user")
+	ErrRoleInUse           = errors.New("Cannot delete assigned role")
+	ErrRoleNotFound        = errors.New("Role not found")
+)
+
 type Rbac struct {
 	DB *gorm.DB
 }
@@ -39,4 +47,23 @@ func (r *Rbac) CreatePermission(permissions []string) (error) {
 		}
 	}
 	return nil
+}
+
+func (r *Rbac) AssignPermissions(role models.Role, permissions []string) (error) {
+	var dbRole models.Role
+	rRes := r.DB.Where("name = ?", role).First(&dbRole)
+	if rRes.Error != nil {
+		if errors.Is(rRes.Error, gorm.ErrRecordNotFound) {
+			return ErrRoleNotFound
+		}
+	}
+	var perm models.Permission
+	for _, permission := range permissions {
+		rRes := r.DB.Where("name = ?", permission).First(&perm)
+		if rRes.Error != nil {
+			if errors.Is(rRes.Error, gorm.ErrRecordNotFound) {
+				return ErrPermissionNotFound
+			}
+		}
+	}
 }
