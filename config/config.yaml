@@ -15,8 +15,19 @@ roles:
   - Owner
   - Reader
   - Contributor
-permissions:
-  - Create
-  - Read
-  - Update
-  - Delete
+permissions: ["Create","Read","Update","Delete"]
+rolePermissions:
+  - role: Owner
+    permissions:
+    - Create
+    - Read
+    - Update
+    - Delete
+  - role: Reader
+    permissions:
+    - Read
+  - role: Contributor
+    permissions:
+    - Create
+    - Read
+    - Update

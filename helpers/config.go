@@ -7,6 +7,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type RolePermission struct {
+	Role       string   `yaml:"role"`
+	Permission []string `yaml:"permissions"`
+}
+
 type Config struct {
     Service struct {
         Port string `yaml:"port"`
@@ -26,6 +31,7 @@ type Config struct {
 	} `yaml:"rabbitmq"`
 	Roles []string `yaml:"roles"`
 	Permissions []string `yaml:"permissions"`
+	RolePermissions []RolePermission `yaml:"rolePermissions"`
 }
 
 func (c *Config) ReadConf(f string) (*Config, error) {

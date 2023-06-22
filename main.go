@@ -37,6 +37,6 @@ func main() {
 	defer conn.Close()
 	r := routes.SetupRoutes(db, conn)
 	helpers.InitialiseServices(db)
-	helpers.InitialiseRbac(db, c.Roles, c.Permissions)
+	helpers.InitialiseAuthorization(db, c.Roles, c.Permissions, c.RolePermissions)
 	http.ListenAndServe(":"+c.Service.Port, r)
 }

@@ -1,4 +1,4 @@
-package rbac
+package authorization
 
 import (
 	"errors"
@@ -49,21 +49,34 @@ func (r *Rbac) CreatePermission(permissions []string) (error) {
 	return nil
 }
 
-func (r *Rbac) AssignPermissions(role models.Role, permissions []string) (error) {
-	var dbRole models.Role
-	rRes := r.DB.Where("name = ?", role).First(&dbRole)
+func (r *Rbac) AssignPermissions(roleName string, permNames []string) (error) {
+	var role models.Role
+	rRes := r.DB.Where("name = ?", roleName).First(&role)
 	if rRes.Error != nil {
 		if errors.Is(rRes.Error, gorm.ErrRecordNotFound) {
 			return ErrRoleNotFound
 		}
 	}
-	var perm models.Permission
-	for _, permission := range permissions {
-		rRes := r.DB.Where("name = ?", permission).First(&perm)
+	var perms []models.Permission
+	for _, permName := range permNames {
+		var perm models.Permission
+		rRes := r.DB.Where("name = ?", permName).First(&perm)
 		if rRes.Error != nil {
 			if errors.Is(rRes.Error, gorm.ErrRecordNotFound) {
 				return ErrPermissionNotFound
 			}
 		}
+		perms = append(perms, perm)
 	}
+	for _, perm := range perms {
+		var rolePerm models.RolePermission
+		rRes := r.DB.Where("role_id = ?", role.ID).Where("permission_id = ?", perm.ID).First(&rolePerm)
+		if rRes.Error != nil {
+			res := r.DB.Create(&models.RolePermission{RoleID: role.ID, PermissionID: perm.ID})
+			if res.Error != nil {
+				return res.Error
+			}
+		}
+	}
+	return nil
 }
