@@ -32,6 +32,7 @@ type Config struct {
 	Roles []string `yaml:"roles"`
 	Permissions []string `yaml:"permissions"`
 	RolePermissions []RolePermission `yaml:"rolePermissions"`
+	Groups []string `yaml:"groups"`
 }
 
 func (c *Config) ReadConf(f string) (*Config, error) {

@@ -80,3 +80,18 @@ func (r *Rbac) AssignPermissions(roleName string, permNames []string) (error) {
 	}
 	return nil
 }
+
+func (r *Rbac) CreateGroups(groups []string) (error) {
+	for _, group := range groups {
+		var dbGroup models.Group
+		res := r.DB.Where("name = ?", group).First(&dbGroup)
+		if res.Error != nil {
+			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+				r.DB.Create(&models.Group{Name: group})
+			} else {
+				return res.Error
+			}
+		}
+	}
+	return nil
+}

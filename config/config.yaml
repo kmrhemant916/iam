@@ -31,3 +31,7 @@ rolePermissions:
     - Create
     - Read
     - Update
+groups:
+  - Administrator
+  - Developer
+  - DevOps
