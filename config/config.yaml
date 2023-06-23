@@ -39,9 +39,9 @@ groupRoles:
   - group: Administrator
     roles:
     - Owner
-  - role: Developer
-    permissions:
+  - group: Developer
+    roles:
     - Reader
-  - role: DevOps
-    permissions:
+  - group: DevOps
+    roles:
     - Contributor

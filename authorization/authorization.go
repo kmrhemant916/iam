@@ -120,10 +120,10 @@ func (r *Rbac) AssignGroupRoles(group string, roles []string) (error) {
 		var groupRole models.GroupRole
 		result := r.DB.Where("role_id = ?", dbRole.ID).Where("group_id = ?", dbGroup.ID).First(&groupRole)
 		if result.Error != nil {
-			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 				r.DB.Create(&models.GroupRole{GroupID: dbGroup.ID, RoleID: dbRole.ID})
 			} else {
-				return res.Error
+				return result.Error
 			}
 		}
 	}
