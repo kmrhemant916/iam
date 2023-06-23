@@ -13,6 +13,7 @@ var (
 	ErrRoleAlreadyAssigned = errors.New("This role is already assigned to the user")
 	ErrRoleInUse           = errors.New("Cannot delete assigned role")
 	ErrRoleNotFound        = errors.New("Role not found")
+	ErrGroupNotFound       = errors.New("Group not found")
 )
 
 type Rbac struct {
@@ -95,3 +96,36 @@ func (r *Rbac) CreateGroups(groups []string) (error) {
 	}
 	return nil
 }
+
+func (r *Rbac) AssignGroupRoles(group string, roles []string) (error) {
+	var dbGroup models.Group
+	res := r.DB.Where("name = ?", group).First(&dbGroup)
+	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			return ErrGroupNotFound
+		}
+	}
+	var dbRoles []models.Role
+	for _, role := range roles {
+		var dbRole models.Role
+		res := r.DB.Where("name = ?", role).First(&dbRole)
+		if res.Error != nil {
+			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+				return ErrRoleNotFound
+			}
+		}
+		dbRoles = append(dbRoles, dbRole)
+	}
+	for _, dbRole := range dbRoles {
+		var groupRole models.GroupRole
+		result := r.DB.Where("role_id = ?", dbRole.ID).Where("group_id = ?", dbGroup.ID).First(&groupRole)
+		if result.Error != nil {
+			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+				r.DB.Create(&models.GroupRole{GroupID: dbGroup.ID, RoleID: dbRole.ID})
+			} else {
+				return res.Error
+			}
+		}
+	}
+	return nil
+}	

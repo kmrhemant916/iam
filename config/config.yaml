@@ -35,3 +35,13 @@ groups:
   - Administrator
   - Developer
   - DevOps
+groupRoles:
+  - group: Administrator
+    roles:
+    - Owner
+  - role: Developer
+    permissions:
+    - Reader
+  - role: DevOps
+    permissions:
+    - Contributor

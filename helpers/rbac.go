@@ -12,7 +12,10 @@ func InitialiseAuthorization(db *gorm.DB, c *Config) {
 	r.CreateRole(c.Roles)
 	r.CreatePermission(c.Permissions)
 	for _, roleRolePermission := range c.RolePermissions {
-		r.AssignPermissions(roleRolePermission.Role, roleRolePermission.Permission)
+		r.AssignPermissions(roleRolePermission.Role, roleRolePermission.Permissions)
 	}
 	r.CreateGroups(c.Groups)
+	for _, groupRole := range c.GroupRoles {
+		r.AssignGroupRoles(groupRole.Group, groupRole.Roles)
+	}
 }

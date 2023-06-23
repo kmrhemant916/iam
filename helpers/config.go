@@ -9,7 +9,12 @@ import (
 
 type RolePermission struct {
 	Role       string   `yaml:"role"`
-	Permission []string `yaml:"permissions"`
+	Permissions []string `yaml:"permissions"`
+}
+
+type GroupRole struct {
+	Group       string   `yaml:"group"`
+	Roles []string `yaml:"roles"`
 }
 
 type Config struct {
@@ -33,6 +38,7 @@ type Config struct {
 	Permissions []string `yaml:"permissions"`
 	RolePermissions []RolePermission `yaml:"rolePermissions"`
 	Groups []string `yaml:"groups"`
+	GroupRoles []GroupRole `yaml:"groupRoles"`
 }
 
 func (c *Config) ReadConf(f string) (*Config, error) {
