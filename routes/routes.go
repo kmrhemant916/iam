@@ -15,6 +15,7 @@ func SetupRoutes(db *gorm.DB, conn *amqp.Connection) (*chi.Mux){
 	}
 	router := chi.NewRouter()
 	router.Post("/signup", app.Signup)
+	router.Post("/signin", app.Signin)
 
 	return router
 }

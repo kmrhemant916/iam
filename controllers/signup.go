@@ -20,7 +20,6 @@ type RequestPayload struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Organization string `json:"organization"`
-	AccountType string `json:"account_type"`
 }
 
 type MailPayload struct {
@@ -67,7 +66,10 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 	} else {
 		organizationResult := app.DB.Create(&organization)
 		if organizationResult.Error != nil {
-			helpers.StatusInternalServerErrorResponse(w,r)
+			response := map[string]interface{}{
+				"message": "Internal server error",
+			}
+			helpers.SendResponse(w,response, http.StatusInternalServerError)
 		}
 	}
 	mailPayload := MailPayload{

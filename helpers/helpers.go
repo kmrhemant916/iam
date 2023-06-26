@@ -5,12 +5,10 @@ import (
 	"net/http"
 )
 
-func StatusInternalServerErrorResponse(w http.ResponseWriter, _ *http.Request) {
-	response := map[string]interface{}{
-		"message": "Internal server error",
-	}
+func SendResponse(w http.ResponseWriter, r map[string]interface{}, statusCode int) {
+	response := r
 	jsonResponse, _ := json.Marshal(response)
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusInternalServerError)
+	w.WriteHeader(statusCode)
 	w.Write(jsonResponse)
 }
