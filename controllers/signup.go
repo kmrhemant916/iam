@@ -52,7 +52,7 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	user := models.User{ID: id, Email: requestPayload.Email, Password: string(hashedPassword)}
+	user := models.User{ID: id, Email: requestPayload.Email, Password: string(hashedPassword), IsRoot: "true"}
 	organization := models.Organization{Name: requestPayload.Organization}
 	userResult := app.DB.Create(&user)
 	if userResult.Error != nil {
