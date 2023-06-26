@@ -21,14 +21,17 @@
 docker run --name mysql -v $(pwd)/Documents/github/mysql:/var/lib/mysql  -e MYSQL_ROOT_PASSWORD=admin -p 3306:3306 -d mysql:latest
 ```
 
-## FLow
+## Flow
 
-* User signup
+* User root signup flow
   * Username
   * Password
   * Company
-* Add user to the Admin
+* Normal user signin
+  * Check if it's a first login
+* Add user to the Administrator group
 * Invite user
   * Username
   * Default role will be reader
+  * Password
 * Add user to group

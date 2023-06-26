@@ -3,17 +3,19 @@ package authorization
 import (
 	"errors"
 
+	"github.com/google/uuid"
 	"github.com/kmrhemant916/iam/models"
 	"gorm.io/gorm"
 )
 
 var (
-	ErrPermissionInUse     = errors.New("Cannot delete assigned permission")
-	ErrPermissionNotFound  = errors.New("Permission not found")
-	ErrRoleAlreadyAssigned = errors.New("This role is already assigned to the user")
-	ErrRoleInUse           = errors.New("Cannot delete assigned role")
-	ErrRoleNotFound        = errors.New("Role not found")
-	ErrGroupNotFound       = errors.New("Group not found")
+	ErrPermissionInUse     = errors.New("cannot delete assigned permission")
+	ErrPermissionNotFound  = errors.New("permission not found")
+	ErrRoleAlreadyAssigned = errors.New("this role is already assigned to the user")
+	ErrRoleInUse           = errors.New("cannot delete assigned role")
+	ErrRoleNotFound        = errors.New("role not found")
+	ErrGroupNotFound       = errors.New("group not found")
+	ErrUserNotFound        = errors.New("user not found")
 )
 
 type Rbac struct {
@@ -128,4 +130,82 @@ func (r *Rbac) AssignGroupRoles(group string, roles []string) (error) {
 		}
 	}
 	return nil
-}	
+}
+
+func (r *Rbac) CheckGroupRole(groupID uint, roleName string) (bool, error) {
+	var role models.Role
+	res := r.DB.Where("name = ?", roleName).First(&role)
+	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			return false, ErrRoleNotFound
+		}
+	}
+	var groupRole models.GroupRole
+	res = r.DB.Where("group_id = ?", groupID).Where("role_id = ?", role.ID).First(&groupRole)
+	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func (r *Rbac) CheckGroupPermission(groupID uint, permName string) (bool, error) {
+	var groupRoles []models.GroupRole
+	res := r.DB.Where("user_id = ?", groupID).Find(&groupRoles)
+	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+	}
+	var roleIDs []uint
+	for _, r := range groupRoles {
+		roleIDs = append(roleIDs, r.RoleID)
+	}
+	var perm models.Permission
+	res = r.DB.Where("name = ?", permName).First(&perm)
+	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			return false, ErrPermissionNotFound
+		}
+	}
+	var rolePermission models.RolePermission
+	res = r.DB.Where("role_id IN (?)", roleIDs).Where("permission_id = ?", perm.ID).First(&rolePermission)
+	if res.Error != nil {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (r *Rbac) AssignGroups(userID uuid.UUID, groups []string) (error) {
+	var user models.User
+	res := r.DB.Where("id = ?", userID).First(&user)
+	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			return ErrUserNotFound
+		}
+	}
+	var groupIDs []uint
+	for _, group := range groups {
+		var g models.Group
+		result := r.DB.Where("name = ?", group).First(&g)
+		if result.Error != nil {
+			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+				return ErrGroupNotFound
+			}
+		}
+		groupIDs = append(groupIDs, g.ID)
+	}
+	for _, groupID := range groupIDs {
+		var userGroup models.UserGroup
+		res := r.DB.Where("user_id = ?", user.ID).Where("group_id = ?", groupID).First(&userGroup)
+		if res.Error != nil {
+			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+				r.DB.Create(models.UserGroup{UserID: user.ID, GroupID: groupID})
+			} else {
+				return res.Error
+			}
+		}
+	}
+	return nil
+}

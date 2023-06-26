@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kmrhemant916/iam/authorization"
 	"github.com/kmrhemant916/iam/helpers"
 	"github.com/kmrhemant916/iam/models"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -19,6 +20,7 @@ type RequestPayload struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Organization string `json:"organization"`
+	AccountType string `json:"account_type"`
 }
 
 type MailPayload struct {
@@ -31,6 +33,11 @@ type App struct {
 	DB *gorm.DB
 	Conn *amqp.Connection
 }
+
+const (
+	DefaultRootGroup = "Administrator"
+	DefaultUserGroup = "Reader"
+)
 
 func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 	var requestPayload RequestPayload
@@ -73,6 +80,12 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Failed to marshal message: %s", err)
 	}
 	app.SendEmail(body)
+	rbac := &authorization.Rbac{
+		DB: app.DB,
+	}
+	var groups []string
+	groups = append(groups, DefaultRootGroup)
+	rbac.AssignGroups(id, groups)
 	response := map[string]interface{}{
 		"message": "User stored successfully",
 	}
