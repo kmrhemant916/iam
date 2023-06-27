@@ -35,7 +35,7 @@ func main() {
 		panic(err)
 	}
 	defer conn.Close()
-	r := routes.SetupRoutes(db, conn, c)
+	r := routes.SetupRoutes(db, conn)
 	helpers.InitialiseServices(db)
 	helpers.InitialiseAuthorization(db, c)
 	http.ListenAndServe(":"+c.Service.Port, r)

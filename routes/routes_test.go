@@ -42,7 +42,7 @@ func TestAppRoutes(t *testing.T) {
 		panic(err)
 	}
 	defer rabbitConn.Close()
-	mux := SetupRoutes(db, rabbitConn, c)
+	mux := SetupRoutes(db, rabbitConn)
 	for _, route := range registered {
 		// Check to see if the route exists
 		if !routeExists(route.route, route.method, mux) {
