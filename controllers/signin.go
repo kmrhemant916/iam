@@ -21,8 +21,6 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-var jwtKey = []byte("my_secret_key")
-
 func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 	var signinPayload SigninPayload
 	err := json.NewDecoder(r.Body).Decode(&signinPayload)
@@ -54,7 +52,7 @@ func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtKey)
+	tokenString, err := token.SignedString([]byte(app.JWTKey))
 	if err != nil {
 		response := map[string]interface{}{
 			"message": "Internal server error",

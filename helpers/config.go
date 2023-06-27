@@ -39,6 +39,7 @@ type Config struct {
 	RolePermissions []RolePermission `yaml:"rolePermissions"`
 	Groups []string `yaml:"groups"`
 	GroupRoles []GroupRole `yaml:"groupRoles"`
+	JWTKey string `yaml:"jwt_key"`
 }
 
 func (c *Config) ReadConf(f string) (*Config, error) {

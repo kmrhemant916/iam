@@ -31,6 +31,7 @@ type MailPayload struct {
 type App struct {
 	DB *gorm.DB
 	Conn *amqp.Connection
+	JWTKey string
 }
 
 const (
