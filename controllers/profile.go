@@ -17,7 +17,7 @@ type Profile struct {
 	ID uuid.UUID `json:"user_id"`
 	Groups []string `json:"groups"`
 	Roles []string `json:"roles"`
-	// Permission []string `json:"permission"`
+	Permission []string `json:"permission"`
 }
 
 func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
@@ -44,12 +44,24 @@ func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
 		app.DB.Where("id = ?", userGroup.GroupID).Find(&group)
 		userProfile.Groups = append(userProfile.Groups, group.Name)
 	}
-	// var role models.GroupRole
-	// app.DB.Where("group_id = ?", userGroup.GroupID).Find(&role)
-
-
-
-
+	var groupRoles []models.GroupRole
+	for _, userGroup := range userGroups {
+		var groupRole models.GroupRole
+		app.DB.Where("group_id = ?", userGroup.GroupID).Find(&groupRole)
+		groupRoles = append(groupRoles, groupRole)
+	}
+	for _, groupRole := range groupRoles {
+		var role models.Role
+		app.DB.Where("id = ?", groupRole.RoleID).Find(&role)
+		userProfile.Roles = append(userProfile.Roles, role.Name)
+		var rolePermissions []models.RolePermission
+		app.DB.Where("role_id = ?", role.ID).Find(&rolePermissions)
+		for _, rolePermission := range rolePermissions {
+			var permission models.Permission
+			app.DB.Where("id = ?", rolePermission.PermissionID).Find(&permission)
+			userProfile.Permission = append(userProfile.Permission, permission.Name)
+		}
+	}
 	response := map[string]interface{}{
 		"message": userProfile,
 	}
