@@ -52,7 +52,7 @@ func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(app.JWTKey))
+	tokenString, err := token.SignedString(app.JWTKey)
 	if err != nil {
 		response := map[string]interface{}{
 			"message": "Internal server error",

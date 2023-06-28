@@ -18,12 +18,18 @@ func JWTMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get(AuthHeader)
 		if tokenString == "" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			response := map[string]interface{}{
+				"message": "JWT is required",
+			}
+			helpers.SendResponse(w, response, http.StatusUnauthorized)
 			return
 		}
-		jwtKey, err := getJWTSecretKey()
+		jwtKey, err := GetJWTSecretKey()
 		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			response := map[string]interface{}{
+				"message": "Internal Server Error",
+			}
+			helpers.SendResponse(w, response, http.StatusInternalServerError)
 			return
 		}
 		claims := &controllers.Claims{}
@@ -31,6 +37,7 @@ func JWTMiddleware(next http.Handler) http.Handler {
 			return jwtKey, nil
 		})
 		if err != nil || !token.Valid {
+			fmt.Println(err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -38,7 +45,7 @@ func JWTMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func getJWTSecretKey() ([]byte, error) {
+func GetJWTSecretKey() ([]byte, error) {
 	absPath, _ := helpers.GetAbsPath(ConfigPath)
 	data, err := ioutil.ReadFile(absPath)
 	if err != nil {
