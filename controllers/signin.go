@@ -44,7 +44,7 @@ func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 		helpers.SendResponse(w, response, http.StatusUnauthorized)
 		return
 	}
-	expirationTime := time.Now().Add(5 * time.Minute)
+	expirationTime := time.Now().Add(60 * time.Minute)
 	claims := &Claims{
 		Username: signinPayload.Email,
 		RegisteredClaims: jwt.RegisteredClaims{

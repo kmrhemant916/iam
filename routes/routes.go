@@ -25,7 +25,7 @@ func SetupRoutes(db *gorm.DB, conn *amqp.Connection) (*chi.Mux){
 	router.Group(func(r chi.Router) {
 		r.Use(middlewares.JWTMiddleware)
 		r.Get("/roles", app.GetRoles)
-		r.Get("/api/users/{userID}/profile", app.GetUserProfile)
+		r.Get("/api/users/{id}/profile", app.GetUserProfile)
 	})
 
 	return router
