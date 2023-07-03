@@ -13,7 +13,6 @@ import (
 	"github.com/kmrhemant916/iam/models"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type RequestPayload struct {
@@ -26,12 +25,6 @@ type MailPayload struct {
 	To string `json:"to"`
 	From string `json:"from"`
 	Body string `json:"body"`
-}
-
-type App struct {
-	DB *gorm.DB
-	Conn *amqp.Connection
-	JWTKey []byte
 }
 
 const (

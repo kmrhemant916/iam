@@ -13,11 +13,7 @@ import (
 func SetupRoutes(db *gorm.DB, conn *amqp.Connection) (*chi.Mux){
 	var jwtKey []byte
 	jwtKey, _ = middlewares.GetJWTSecretKey()
-	app := &controllers.App{
-		DB: db,
-		Conn: conn,
-		JWTKey: jwtKey,
-	}
+	app := controllers.NewApp(db, conn, jwtKey)
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Post("/signup", app.Signup)

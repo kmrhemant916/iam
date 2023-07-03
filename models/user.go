@@ -11,3 +11,7 @@ type User struct {
 	Password string `json:"password"`
 	IsRoot string `json:"is_root"`
 }
+
+type UserRepository interface {
+	FindByID(ID uuid.UUID) (*User, error)
+}
