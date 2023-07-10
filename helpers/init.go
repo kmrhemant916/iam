@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/kmrhemant916/iam/entities"
 	"github.com/kmrhemant916/iam/models"
 	"gorm.io/gorm"
 )
@@ -34,8 +35,8 @@ func Createtable(db *gorm.DB) {
 	db.AutoMigrate(models.Permission{})
 	db.AutoMigrate(models.Role{})
 	db.AutoMigrate(models.RolePermission{})
-	db.AutoMigrate(models.User{})
-	db.AutoMigrate(models.Organization{})
+	db.AutoMigrate(entities.User{})
+	db.AutoMigrate(entities.Organization{})
 	db.AutoMigrate(models.Group{})
 	db.AutoMigrate(models.GroupRole{})
 	db.AutoMigrate(models.UserGroup{})
