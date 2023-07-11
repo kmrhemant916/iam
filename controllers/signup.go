@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kmrhemant916/iam/authorization"
-	"github.com/kmrhemant916/iam/entities"
+	"github.com/kmrhemant916/iam/global"
 	"github.com/kmrhemant916/iam/helpers"
 	"github.com/kmrhemant916/iam/models"
 	"github.com/kmrhemant916/iam/repositories"
@@ -18,7 +18,6 @@ import (
 	"github.com/kmrhemant916/iam/utils"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type RequestPayload struct {
@@ -53,44 +52,74 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 	}
 	user := models.User{ID: id, Email: requestPayload.Email, Password: string(hashedPassword), IsRoot: true}
 	organization := models.Organization{Name: requestPayload.Organization}
-	query := "SELECT * FROM organizations WHERE name = ?"
-	organizationRepository := repositories.NewGenericRepository[entities.Organization](app.DB)
-	organizationService := service.NewGenericService[entities.Organization](organizationRepository)
-	_, err = organizationService.FindOne((utils.OrganizationToEntity(&organization)), query, requestPayload.Organization)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			err := organizationService.Create((utils.OrganizationToEntity(&organization)))
-			if err != nil {
+	signupRepository := repositories.NewSignupRepository(app.DB)
+	signupService := service.NewSignupService(signupRepository)
+	err = signupService.CreateRootAccount(utils.UserToEntity(&user), utils.OrganizationToEntity(&organization))
+    if err != nil {
+        switch {
+			case errors.Is(err, global.ErrOrgExists):
 				response := map[string]interface{}{
-					"message": "Internal server error",
+					"message": "org already exist",
+				}
+				helpers.SendResponse(w,response, http.StatusForbidden)
+				return
+			case errors.Is(err, global.ErrUserExists):
+				response := map[string]interface{}{
+					"message": "user already exist",
+				}
+				helpers.SendResponse(w,response, http.StatusForbidden)
+				return
+			default:
+				response := map[string]interface{}{
+					"message": "Internal server error!",
 				}
 				helpers.SendResponse(w,response, http.StatusInternalServerError)
-				return
 			}
-		} else {
-			response := map[string]interface{}{
-				"message": "Internal server error",
-			}
-			helpers.SendResponse(w,response, http.StatusInternalServerError)
-			return
-		}
-	} else {
-		response := map[string]interface{}{
-			"message": "Org already exist",
-		}
-		helpers.SendResponse(w,response, http.StatusForbidden)
-		return
-	}
-	userRepository := repositories.NewGenericRepository[entities.User](app.DB)
-	userService := service.NewGenericService[entities.User](userRepository)
-	userResult := userService.Create(utils.UserToEntity(&user))
-	if userResult != nil {
-		response := map[string]interface{}{
-			"message": "Internal server error",
-		}
-		helpers.SendResponse(w,response, http.StatusInternalServerError)
-		return
-	}
+        return
+    }
+
+
+
+
+
+	// query := "SELECT * FROM organizations WHERE name = ?"
+	// organizationRepository := repositories.NewGenericRepository[entities.Organization](app.DB)
+	// organizationService := service.NewGenericService[entities.Organization](organizationRepository)
+	// _, err = organizationService.FindOne((utils.OrganizationToEntity(&organization)), query, requestPayload.Organization)
+	// if err != nil {
+	// 	if errors.Is(err, gorm.ErrRecordNotFound) {
+	// 		err := organizationService.Create((utils.OrganizationToEntity(&organization)))
+	// 		if err != nil {
+	// 			response := map[string]interface{}{
+	// 				"message": "Internal server error",
+	// 			}
+	// 			helpers.SendResponse(w,response, http.StatusInternalServerError)
+	// 			return
+	// 		}
+	// 	} else {
+	// 		response := map[string]interface{}{
+	// 			"message": "Internal server error",
+	// 		}
+	// 		helpers.SendResponse(w,response, http.StatusInternalServerError)
+	// 		return
+	// 	}
+	// } else {
+	// 	response := map[string]interface{}{
+	// 		"message": "Org already exist",
+	// 	}
+	// 	helpers.SendResponse(w,response, http.StatusForbidden)
+	// 	return
+	// }
+	// userRepository := repositories.NewGenericRepository[entities.User](app.DB)
+	// userService := service.NewGenericService[entities.User](userRepository)
+	// userResult := userService.Create(utils.UserToEntity(&user))
+	// if userResult != nil {
+	// 	response := map[string]interface{}{
+	// 		"message": "Internal server error",
+	// 	}
+	// 	helpers.SendResponse(w,response, http.StatusInternalServerError)
+	// 	return
+	// }
 	mailPayload := MailPayload{
 		To: "hemank",
 		From: "ddd",
