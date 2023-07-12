@@ -7,14 +7,14 @@ import (
 
 func OrganizationToEntity(model *models.Organization) *entities.Organization {
 	var entity = &entities.Organization{}
-	entity.ID = model.ID
+	entity.OrganizationID = model.OrganizationID
 	entity.Name = model.Name
 	return entity
 }
 
 func OrganizationToModel(entity *entities.Organization) *models.Organization {
 	var model = &models.Organization{}
-	model.ID = entity.ID
+	model.OrganizationID = entity.OrganizationID
 	model.Name = entity.Name
 	return model
 }

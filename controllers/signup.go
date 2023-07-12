@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/kmrhemant916/iam/authorization"
 	"github.com/kmrhemant916/iam/global"
 	"github.com/kmrhemant916/iam/helpers"
 	"github.com/kmrhemant916/iam/models"
@@ -44,14 +43,15 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
 		return
 	}
-	id := uuid.New()
+	userId := uuid.New()
+	organizationId := uuid.New()
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(requestPayload.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	user := models.User{ID: id, Email: requestPayload.Email, Password: string(hashedPassword), IsRoot: true}
-	organization := models.Organization{Name: requestPayload.Organization}
+	organization := models.Organization{OrganizationID: organizationId, Name: requestPayload.Organization}
+	user := models.User{UserID: userId, Email: requestPayload.Email, Password: string(hashedPassword), IsRoot: true, OrganizationID: organizationId}
 	signupRepository := repositories.NewSignupRepository(app.DB)
 	signupService := service.NewSignupService(signupRepository)
 	err = signupService.CreateRootAccount(utils.UserToEntity(&user), utils.OrganizationToEntity(&organization))
@@ -130,12 +130,12 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Failed to marshal message: %s", err)
 	}
 	app.SendEmail(body)
-	rbac := &authorization.Rbac{
-		DB: app.DB,
-	}
-	var groups []string
-	groups = append(groups, DefaultRootGroup)
-	rbac.AssignGroups(id, groups)
+	// rbac := &authorization.Rbac{
+	// 	DB: app.DB,
+	// }
+	// var groups []string
+	// groups = append(groups, DefaultRootGroup)
+	// rbac.AssignGroups(id, groups)
 	response := map[string]interface{}{
 		"message": "User stored successfully",
 	}

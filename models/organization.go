@@ -1,6 +1,8 @@
 package models
 
+import "github.com/google/uuid"
+
 type Organization struct {
-	ID uint `json:"id"`
-	Name  string `json:"name"`
+	OrganizationID uuid.UUID
+	Name  string
 }

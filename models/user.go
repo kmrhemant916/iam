@@ -5,8 +5,9 @@ import (
 )
 
 type User struct {
-	ID uuid.UUID `json:"id"`
-	Email  string `json:"email"`
-	Password string `json:"password"`
-	IsRoot bool `json:"is_root"`
+	UserID uuid.UUID
+	Email  string
+	Password string
+	IsRoot bool
+	OrganizationID uuid.UUID
 }

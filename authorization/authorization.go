@@ -198,10 +198,10 @@ func (r *Rbac) AssignGroups(userID uuid.UUID, groups []string) (error) {
 	}
 	for _, groupID := range groupIDs {
 		var userGroup models.UserGroup
-		res := r.DB.Where("user_id = ? AND group_id = ?", user.ID, groupID).First(&userGroup)
+		res := r.DB.Where("user_id = ? AND group_id = ?", user.UserID, groupID).First(&userGroup)
 		if res.Error != nil {
 			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-				r.DB.Create(&models.UserGroup{UserID: user.ID, GroupID: groupID})
+				r.DB.Create(&models.UserGroup{UserID: user.UserID, GroupID: groupID})
 			} else {
 				return res.Error
 			}

@@ -36,9 +36,9 @@ func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userProfile.Email = user.Email
-	userProfile.ID = user.ID
+	userProfile.ID = user.UserID
 	var userGroups []models.UserGroup
-	app.DB.Where("user_id = ?", user.ID).Find(&userGroups)
+	app.DB.Where("user_id = ?", user.UserID).Find(&userGroups)
 	for _, userGroup := range userGroups {
 		var group models.Group
 		app.DB.Where("id = ?", userGroup.GroupID).Find(&group)
