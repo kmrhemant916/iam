@@ -19,7 +19,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type RequestPayload struct {
+type SignupPayload struct {
 	Email    string `json:"email" validate:"required"`
 	Password string `json:"password" validate:"required,min=8,max=32"`
 	Organization string `json:"organization" validate:"required"`
@@ -37,28 +37,28 @@ const (
 )
 
 func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
-	var requestPayload RequestPayload
-	err := json.NewDecoder(r.Body).Decode(&requestPayload)
+	var signupPayload SignupPayload
+	err := json.NewDecoder(r.Body).Decode(&signupPayload)
 	if err != nil {
 		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 	}
-	errorsList, err := utils.ValidateJSON(requestPayload)
+	errorsList, err := utils.ValidateJSON(signupPayload)
 	if err != nil {
 		for _, e := range errorsList {
 			switch {
-				case e.FailedField == "RequestPayload.Password" && (e.Tag == "min" || e.Tag == "max"):
+				case e.FailedField == "SignupPayload.Password" && (e.Tag == "min" || e.Tag == "max"):
 					response := map[string]interface{}{
 						"message": "password should be in between 8 and 32 characters",
 					}
 					helpers.SendResponse(w,response, http.StatusUnauthorized)
 					return
-				case e.FailedField == "RequestPayload.Email" && (e.Tag == "required"):
+				case e.FailedField == "SignupPayload.Email" && (e.Tag == "required"):
 					response := map[string]interface{}{
 						"message": "email field is required",
 					}
 					helpers.SendResponse(w,response, http.StatusForbidden)
 					return
-				case e.FailedField == "RequestPayload.Organization" && (e.Tag == "required"):
+				case e.FailedField == "SignupPayload.Organization" && (e.Tag == "required"):
 					response := map[string]interface{}{
 						"message": "organization field is required",
 					}
@@ -74,13 +74,13 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 	}
 	userId := uuid.New()
 	organizationId := uuid.New()
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(requestPayload.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(signupPayload.Password), bcrypt.DefaultCost)
 	if err != nil {
 		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 		return
 	}
-	organization := models.Organization{OrganizationID: organizationId, Name: requestPayload.Organization}
-	user := models.User{UserID: userId, Email: requestPayload.Email, Password: string(hashedPassword), IsRoot: true, OrganizationID: organizationId}
+	organization := models.Organization{OrganizationID: organizationId, Name: signupPayload.Organization}
+	user := models.User{UserID: userId, Email: signupPayload.Email, Password: string(hashedPassword), IsRoot: true, OrganizationID: organizationId}
 	signupRepository := repositories.NewSignupRepository(app.DB)
 	signupService := service.NewSignupService(signupRepository)
 	err = signupService.CreateRootAccount(utils.UserToEntity(&user), utils.OrganizationToEntity(&organization))
@@ -111,7 +111,7 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 	// query := "SELECT * FROM organizations WHERE name = ?"
 	// organizationRepository := repositories.NewGenericRepository[entities.Organization](app.DB)
 	// organizationService := service.NewGenericService[entities.Organization](organizationRepository)
-	// _, err = organizationService.FindOne((utils.OrganizationToEntity(&organization)), query, requestPayload.Organization)
+	// _, err = organizationService.FindOne((utils.OrganizationToEntity(&organization)), query, signupPayload.Organization)
 	// if err != nil {
 	// 	if errors.Is(err, gorm.ErrRecordNotFound) {
 	// 		err := organizationService.Create((utils.OrganizationToEntity(&organization)))
