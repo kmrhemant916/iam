@@ -20,9 +20,9 @@ import (
 )
 
 type RequestPayload struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	Organization string `json:"organization" binding:"required"`
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required,min=8,max=32"`
+	Organization string `json:"organization" validate:"required"`
 }
 
 type MailPayload struct {
@@ -40,14 +40,43 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 	var requestPayload RequestPayload
 	err := json.NewDecoder(r.Body).Decode(&requestPayload)
 	if err != nil {
-		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
+	}
+	errorsList, err := utils.ValidateJSON(requestPayload)
+	if err != nil {
+		for _, e := range errorsList {
+			switch {
+				case e.FailedField == "RequestPayload.Password" && (e.Tag == "min" || e.Tag == "max"):
+					response := map[string]interface{}{
+						"message": "password should be in between 8 and 32 characters",
+					}
+					helpers.SendResponse(w,response, http.StatusUnauthorized)
+					return
+				case e.FailedField == "RequestPayload.Email" && (e.Tag == "required"):
+					response := map[string]interface{}{
+						"message": "email field is required",
+					}
+					helpers.SendResponse(w,response, http.StatusForbidden)
+					return
+				case e.FailedField == "RequestPayload.Organization" && (e.Tag == "required"):
+					response := map[string]interface{}{
+						"message": "organization field is required",
+					}
+					helpers.SendResponse(w,response, http.StatusForbidden)
+					return
+				default:
+					helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
+					return
+			}
+		}
+		helpers.SendResponse(w, global.InvalidRequestPayloadMessage, http.StatusBadRequest)
 		return
 	}
 	userId := uuid.New()
 	organizationId := uuid.New()
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(requestPayload.Password), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 		return
 	}
 	organization := models.Organization{OrganizationID: organizationId, Name: requestPayload.Organization}
@@ -70,10 +99,7 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 				helpers.SendResponse(w,response, http.StatusForbidden)
 				return
 			default:
-				response := map[string]interface{}{
-					"message": "Internal server error!",
-				}
-				helpers.SendResponse(w,response, http.StatusInternalServerError)
+				helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 			}
         return
     }
