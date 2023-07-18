@@ -40,6 +40,8 @@ func Createtable(db *gorm.DB) {
 	db.AutoMigrate(entities.Group{})
 	db.AutoMigrate(models.GroupRole{})
 	db.AutoMigrate(entities.UserGroup{})
+	db.Migrator().DropConstraint(entities.UserGroup{}, "fk_user_id")
+	db.Exec("ALTER TABLE user_groups ADD CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE")
 }
 
 func GetAbsPath(p string) (string, error) {
