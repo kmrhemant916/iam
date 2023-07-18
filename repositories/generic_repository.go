@@ -41,7 +41,7 @@ func (u *genericRepository[T]) Create(entity *T) error {
 }
 
 func (u *genericRepository[T]) FindOne(entity *T, sqlQuery string, sqlQueryParams ...interface{}) (*T, error) {
-	res := u.db.Raw(sqlQuery, sqlQueryParams).First(entity)
+	res := u.db.Raw(sqlQuery, sqlQueryParams...).First(entity)
 	if res.Error != nil {
 		return nil, res.Error
 	}
