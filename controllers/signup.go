@@ -42,6 +42,7 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&signupPayload)
 	if err != nil {
 		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
+		return
 	}
 	errorsList, err := utils.ValidateJSON(signupPayload)
 	if err != nil {
@@ -51,19 +52,19 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 					response := map[string]interface{}{
 						"message": "password should be in between 8 and 32 characters",
 					}
-					helpers.SendResponse(w,response, http.StatusUnauthorized)
+					helpers.SendResponse(w,response, http.StatusBadRequest)
 					return
 				case e.FailedField == "SignupPayload.Email" && (e.Tag == "required"):
 					response := map[string]interface{}{
 						"message": "email field is required",
 					}
-					helpers.SendResponse(w,response, http.StatusForbidden)
+					helpers.SendResponse(w,response, http.StatusBadRequest)
 					return
 				case e.FailedField == "SignupPayload.Organization" && (e.Tag == "required"):
 					response := map[string]interface{}{
 						"message": "organization field is required",
 					}
-					helpers.SendResponse(w,response, http.StatusForbidden)
+					helpers.SendResponse(w,response, http.StatusBadRequest)
 					return
 				default:
 					helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)

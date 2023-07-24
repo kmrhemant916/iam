@@ -32,8 +32,8 @@ func DatabaseMigration(db *gorm.DB) {
 }
 
 func Createtable(db *gorm.DB) {
-	db.AutoMigrate(models.Permission{})
-	db.AutoMigrate(models.Role{})
+	db.AutoMigrate(entities.Permission{})
+	db.AutoMigrate(entities.Role{})
 	db.AutoMigrate(models.RolePermission{})
 	db.AutoMigrate(entities.Organization{})
 	db.AutoMigrate(entities.User{})

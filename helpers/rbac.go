@@ -9,8 +9,8 @@ func InitialiseAuthorization(db *gorm.DB, c *Config) {
 	r := &authorization.Rbac{
 		DB: db,
 	}
-	// r.CreateRole(c.Roles)
-	// r.CreatePermission(c.Permissions)
+	r.CreateRole(c.Roles)
+	r.CreatePermission(c.Permissions)
 	// for _, roleRolePermission := range c.RolePermissions {
 	// 	r.AssignPermissions(roleRolePermission.Role, roleRolePermission.Permissions)
 	// }

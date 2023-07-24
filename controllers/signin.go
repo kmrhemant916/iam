@@ -6,14 +6,19 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/kmrhemant916/iam/entities"
+	"github.com/kmrhemant916/iam/global"
 	"github.com/kmrhemant916/iam/helpers"
 	"github.com/kmrhemant916/iam/models"
+	"github.com/kmrhemant916/iam/repositories"
+	"github.com/kmrhemant916/iam/service"
+	"github.com/kmrhemant916/iam/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type SigninPayload struct {
-	Email  string `gorm:"unique" json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Email  string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 type Claims struct {
@@ -25,18 +30,46 @@ func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 	var signinPayload SigninPayload
 	err := json.NewDecoder(r.Body).Decode(&signinPayload)
 	if err != nil {
-		http.Error(w, "Invalid JSON data", http.StatusBadRequest)
+		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
+		return
+	}
+	errorsList, err := utils.ValidateJSON(signinPayload)
+	if err != nil {
+		for _, e := range errorsList {
+			switch {
+			case e.FailedField == "SigninPayload.Email" && (e.Tag == "required"):
+					response := map[string]interface{}{
+						"message": "email field is required",
+					}
+					helpers.SendResponse(w,response, http.StatusBadRequest)
+					return
+				case e.FailedField == "SigninPayload.Password" && (e.Tag == "required"):
+					response := map[string]interface{}{
+						"message": "password field is required",
+					}
+					helpers.SendResponse(w,response, http.StatusBadRequest)
+					return
+				default:
+					helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
+					return
+			}
+		}
+		helpers.SendResponse(w, global.InvalidRequestPayloadMessage, http.StatusBadRequest)
 		return
 	}
 	var user models.User
-	if err := app.DB.Where("email = ?", signinPayload.Email).First(&user).Error; err != nil {
+	userQuery := "SELECT * FROM `users` WHERE email = ?"
+	userGroupRepository := repositories.NewGenericRepository[entities.User](app.DB)
+	userGroupService := service.NewGenericService[entities.User](userGroupRepository)
+	entity, err := userGroupService.FindOne((utils.UserToEntity(&user)), userQuery, signinPayload.Email)
+	if err != nil {
 		response := map[string]interface{}{
 			"message": "User doesn't exist",
 		}
 		helpers.SendResponse(w, response, http.StatusNotFound)
 		return
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(signinPayload.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(entity.Password), []byte(signinPayload.Password))
 	if err != nil {
 		response := map[string]interface{}{
 			"message": "Wrong password",
