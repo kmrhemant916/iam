@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/kmrhemant916/iam/service"
 	"github.com/kmrhemant916/iam/utils"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type SigninPayload struct {
@@ -59,15 +61,20 @@ func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 	}
 	var user models.User
 	userQuery := "SELECT * FROM `users` WHERE email = ?"
-	userGroupRepository := repositories.NewGenericRepository[entities.User](app.DB)
-	userGroupService := service.NewGenericService[entities.User](userGroupRepository)
-	entity, err := userGroupService.FindOne((utils.UserToEntity(&user)), userQuery, signinPayload.Email)
+	userRepository := repositories.NewGenericRepository[entities.User](app.DB)
+	userService := service.NewGenericService[entities.User](userRepository)
+	entity, err := userService.FindOne((utils.UserToEntity(&user)), userQuery, signinPayload.Email)
 	if err != nil {
-		response := map[string]interface{}{
-			"message": "User doesn't exist",
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response := map[string]interface{}{
+				"message": "User doesn't exist",
+			}
+			helpers.SendResponse(w, response, http.StatusNotFound)
+			return
+		} else {
+			helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
+			return
 		}
-		helpers.SendResponse(w, response, http.StatusNotFound)
-		return
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(entity.Password), []byte(signinPayload.Password))
 	if err != nil {
