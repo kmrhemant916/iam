@@ -25,22 +25,12 @@ type Profile struct {
 	Permission []string `json:"permission"`
 }
 
-const (
-	userFindQueryByID = "SELECT * FROM `users` WHERE user_id = ?"
-	userGroupFindQueryByID = "SELECT * FROM `user_groups` WHERE user_id = ?"
-	groupFindQueryByID = "SELECT * FROM `groups` WHERE group_id = ?"
-	groupRoleFindQueryByID = "SELECT * FROM `group_roles` WHERE group_id = ?"
-	roleFindQueryByID = "SELECT * FROM `roles` WHERE id = ?"
-	rolePermissionFindQueryByID = "SELECT * FROM `role_permissions` WHERE role_id = ?"
-	permissionFindQueryByID = "SELECT * FROM `permissions` WHERE id = ?"
-)
-
 func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	var userProfile Profile
 	var user models.User
 	userRepository := repositories.NewGenericRepository[entities.User](app.DB)
 	userService := service.NewGenericService[entities.User](userRepository)
-	userEntity, err := userService.FindOne((utils.UserToEntity(&user)), userFindQueryByID, chi.URLParam(r, "id"))
+	userEntity, err := userService.FindOne((utils.UserToEntity(&user)), global.UserFindQueryByID, chi.URLParam(r, "id"))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response := map[string]interface{}{
@@ -58,7 +48,7 @@ func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	var userGroups []entities.UserGroup
 	userGroupRepository := repositories.NewGenericRepository[entities.UserGroup](app.DB)
 	userGroupService := service.NewGenericService[entities.UserGroup](userGroupRepository)
-	err = userGroupService.FindMany(&userGroups, userGroupFindQueryByID, userEntity.UserID)
+	err = userGroupService.FindMany(&userGroups, global.UserGroupFindQueryByUserID, userEntity.UserID)
 	if err != nil {
 		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 		return
@@ -67,7 +57,7 @@ func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
 		var dbGroup models.Group
 		groupRepository := repositories.NewGenericRepository[entities.Group](app.DB)
 		groupService := service.NewGenericService[entities.Group](groupRepository)
-		groupEntity, err := groupService.FindOne((utils.GroupToEntity(&dbGroup)), groupFindQueryByID, userGroup.GroupID)
+		groupEntity, err := groupService.FindOne((utils.GroupToEntity(&dbGroup)), global.GroupFindQueryByID, userGroup.GroupID)
 		if err != nil {
 			helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 			return
@@ -79,7 +69,7 @@ func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
 		var groupRole models.GroupRole
 		groupRoleRepository := repositories.NewGenericRepository[entities.GroupRole](app.DB)
 		groupRoleService := service.NewGenericService[entities.GroupRole](groupRoleRepository)
-		groupRoleEntity, err := groupRoleService.FindOne((utils.GroupRoleToEntity(&groupRole)), groupRoleFindQueryByID, userGroup.GroupID)
+		groupRoleEntity, err := groupRoleService.FindOne((utils.GroupRoleToEntity(&groupRole)), global.GroupRoleFindQueryByID, userGroup.GroupID)
 		if err != nil {
 			helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 			return
@@ -91,7 +81,7 @@ func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
 		var dbRole models.Role
 		roleRepository := repositories.NewGenericRepository[entities.Role](app.DB)
 		roleService := service.NewGenericService[entities.Role](roleRepository)
-		roleEntity, err := roleService.FindOne((utils.RoleToEntity(&dbRole)), roleFindQueryByID, groupRole.RoleID)
+		roleEntity, err := roleService.FindOne((utils.RoleToEntity(&dbRole)), global.RoleFindQueryByID, groupRole.RoleID)
 		if err != nil {
 			helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 			return
@@ -100,7 +90,7 @@ func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
 		var rolePermissions []entities.RolePermission
 		rolePermissionRepository := repositories.NewGenericRepository[entities.RolePermission](app.DB)
 		rolePermissionService := service.NewGenericService[entities.RolePermission](rolePermissionRepository)
-		err = rolePermissionService.FindMany(&rolePermissions, rolePermissionFindQueryByID, roleEntity.ID)
+		err = rolePermissionService.FindMany(&rolePermissions, global.RolePermissionFindQueryByRoleID, roleEntity.ID)
 		if err != nil {
 			helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 			return
@@ -109,7 +99,7 @@ func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
 			var permission models.Permission
 			permissionRepository := repositories.NewGenericRepository[entities.Permission](app.DB)
 			permissionService := service.NewGenericService[entities.Permission](permissionRepository)
-			permissionEntitiy, err := permissionService.FindOne((utils.PermissionToEntity(&permission)), permissionFindQueryByID, rolePermission.PermissionID)
+			permissionEntitiy, err := permissionService.FindOne((utils.PermissionToEntity(&permission)), global.PermissionFindQueryByID, rolePermission.PermissionID)
 			if err != nil {
 				helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 				return
