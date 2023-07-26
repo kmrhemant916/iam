@@ -7,6 +7,7 @@ import (
 type GenericRepository[T any] interface {
 	Create(entity *T) error
 	FindOne(entity *T, sqlQuery string, sqlQueryParams ...interface{}) (*T, error)
+	FindMany(entities *[]T, sqlQuery string, sqlQueryParams ...interface{}) (error)
 }
 
 type genericRepository[T any] struct {
@@ -50,6 +51,18 @@ func (u *genericRepository[T]) FindOne(entity *T, sqlQuery string, sqlQueryParam
 	}
 	return entity, nil
 }
+
+func (u *genericRepository[T]) FindMany(entities *[]T, sqlQuery string, sqlQueryParams ...interface{}) error {
+	res := u.db.Raw(sqlQuery, sqlQueryParams...).Find(entities)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 
 // func GetUsers(c *gin.Context) {
 // 	db := c.MustGet("db").(*gorm.DB)

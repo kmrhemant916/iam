@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/kmrhemant916/iam/global"
 	"github.com/kmrhemant916/iam/helpers"
 	"github.com/kmrhemant916/iam/models"
 	"gorm.io/gorm"
@@ -23,7 +24,7 @@ type Profile struct {
 func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	var userProfile Profile
 	var user models.User
-	res := app.DB.Where("id = ?", chi.URLParam(r, "id")).Find(&user)
+	res := app.DB.Where("user_id = ?", chi.URLParam(r, "id")).Find(&user)
 	if res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 			response := map[string]interface{}{
@@ -32,7 +33,7 @@ func (app *App)GetUserProfile(w http.ResponseWriter, r *http.Request) {
 			helpers.SendResponse(w, response, http.StatusNotFound)
 			return
 		}
-		helpers.SendResponse(w, nil, http.StatusInternalServerError)
+		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 		return
 	}
 	userProfile.Email = user.Email
