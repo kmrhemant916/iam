@@ -69,6 +69,19 @@ func (app *App)InviteUser(w http.ResponseWriter, r *http.Request) {
 		helpers.SendResponse(w, global.InvalidRequestPayloadMessage, http.StatusBadRequest)
 		return
 	}
+	rbac := &authorization.Rbac{
+		DB: app.DB,
+	}
+	for _, group := range inviteUserPayload.Group {
+		_, err := rbac.CheckGroupExistenceUsingName(group)
+		if err != nil {
+			response := map[string]interface{} {
+				"message": group + " group not found",
+			}
+			helpers.SendResponse(w, response, http.StatusNotFound)
+			return
+		}
+	}
 	claims, ok := r.Context().Value("claims").(*Claims)
 	if !ok {
 		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
@@ -103,9 +116,6 @@ func (app *App)InviteUser(w http.ResponseWriter, r *http.Request) {
 			helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 			return
 		}
-	}
-	rbac := &authorization.Rbac{
-		DB: app.DB,
 	}
 	var groups []string
 	groups = append(groups, inviteUserPayload.Group...)

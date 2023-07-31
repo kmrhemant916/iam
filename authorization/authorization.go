@@ -311,3 +311,16 @@ func (r *Rbac) CheckGroupExistenceUsingID(groupID uuid.UUID) (bool, error) {
 	}
 	return true, nil
 }
+
+func (r *Rbac) CheckGroupExistenceUsingName(groupName string) (bool, error) {
+	var group models.Group
+	groupRepository := repositories.NewGenericRepository[entities.Group](r.DB)
+	groupService := service.NewGenericService[entities.Group](groupRepository)
+	_, err := groupService.FindOne((utils.GroupToEntity(&group)), global.GroupFindQueryByName, groupName)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, err
+		}
+	}
+	return true, nil
+}
