@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -37,11 +38,14 @@ func JWTMiddleware(next http.Handler) http.Handler {
 			return jwtKey, nil
 		})
 		if err != nil || !token.Valid {
-			fmt.Println(err)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			response := map[string]interface{}{
+				"message": "Unauthorized",
+			}
+			helpers.SendResponse(w, response, http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), "claims", claims)
+        next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

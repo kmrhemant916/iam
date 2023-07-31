@@ -63,18 +63,6 @@ func (u *genericRepository[T]) FindMany(entities *[]T, sqlQuery string, sqlQuery
 	return nil
 }
 
-
-// func GetUsers(c *gin.Context) {
-// 	db := c.MustGet("db").(*gorm.DB)
-// 	var users []models.User
-// 	db.Find(&users)
-// 	response := []UserInputResponse{}
-// 	for _, user := range users {
-// 		response = append(response, UserInputResponse{user.Email, user.ID})
-// 	}
-// 	c.JSON(http.StatusOK, gin.H{"data": response})
-// }
-
 // func UpdateUser(c *gin.Context) {
 // 	db := c.MustGet("db").(*gorm.DB)
 // 	var user models.User

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/kmrhemant916/iam/entities"
 	"github.com/kmrhemant916/iam/global"
 	"github.com/kmrhemant916/iam/helpers"
@@ -24,7 +25,9 @@ type SigninPayload struct {
 }
 
 type Claims struct {
-	Username string `json:"username"`
+	Username string
+	OrganizationID uuid.UUID
+	IsRoot bool
 	jwt.RegisteredClaims
 }
 
@@ -63,7 +66,7 @@ func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 	userQuery := "SELECT * FROM `users` WHERE email = ?"
 	userRepository := repositories.NewGenericRepository[entities.User](app.DB)
 	userService := service.NewGenericService[entities.User](userRepository)
-	entity, err := userService.FindOne((utils.UserToEntity(&user)), userQuery, signinPayload.Email)
+	userEntity, err := userService.FindOne((utils.UserToEntity(&user)), userQuery, signinPayload.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response := map[string]interface{}{
@@ -76,7 +79,7 @@ func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(entity.Password), []byte(signinPayload.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(userEntity.Password), []byte(signinPayload.Password))
 	if err != nil {
 		response := map[string]interface{}{
 			"message": "Wrong password",
@@ -87,6 +90,8 @@ func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 	expirationTime := time.Now().Add(60 * time.Minute)
 	claims := &Claims{
 		Username: signinPayload.Email,
+		OrganizationID: userEntity.OrganizationID,
+		IsRoot: userEntity.IsRoot,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},

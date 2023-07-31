@@ -11,9 +11,7 @@ const (
 	GroupRoleFindQueryByRoleID = "SELECT * FROM `group_roles` WHERE role_id = ?"
 	UserFindQueryByID = "SELECT * FROM `users` WHERE user_id = ?"
 	UserGroupFindQueryByID = "SELECT * FROM `user_groups` WHERE user_id = ? and group_id = ?"
-
-
-
+	UserFindQueryByEmail = "SELECT * FROM `users` WHERE email = ?"
 	UserGroupFindQueryByUserID = "SELECT * FROM `user_groups` WHERE user_id = ?"
 	GroupRoleFindQueryByID = "SELECT * FROM `group_roles` WHERE group_id = ?"
 	RoleFindQueryByID = "SELECT * FROM `roles` WHERE id = ?"

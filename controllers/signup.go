@@ -17,7 +17,6 @@ import (
 	"github.com/kmrhemant916/iam/service"
 	"github.com/kmrhemant916/iam/utils"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type SignupPayload struct {
@@ -76,7 +75,7 @@ func (app *App)Signup(w http.ResponseWriter, r *http.Request) {
 	}
 	userId := uuid.New()
 	organizationId := uuid.New()
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(signupPayload.Password), bcrypt.DefaultCost)
+	hashedPassword, err := GeneratehashedPassword([]byte(signupPayload.Password))
 	if err != nil {
 		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 		return
