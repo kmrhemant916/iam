@@ -324,3 +324,25 @@ func (r *Rbac) CheckGroupExistenceUsingName(groupName string) (bool, error) {
 	}
 	return true, nil
 }
+
+func (r *Rbac) GetGroupIDUsingName(groupName string) (uuid.UUID, error) {
+	var dbGroup models.Group
+	groupRepository := repositories.NewGenericRepository[entities.Group](r.DB)
+	groupService := service.NewGenericService[entities.Group](groupRepository)
+	groupEntity, err := groupService.FindOne((utils.GroupToEntity(&dbGroup)), global.GroupFindQueryByName, groupName)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	return groupEntity.GroupID, nil
+}
+
+func (r *Rbac) GetGroupNameUsingID(groupID uuid.UUID) (string, error) {
+	var group models.Group
+	groupRepository := repositories.NewGenericRepository[entities.Group](r.DB)
+	groupService := service.NewGenericService[entities.Group](groupRepository)
+	groupEntity, err := groupService.FindOne((utils.GroupToEntity(&group)), global.GroupFindQueryByID, groupID)
+	if err != nil {
+		return "", err
+	}
+	return groupEntity.Name, nil
+}

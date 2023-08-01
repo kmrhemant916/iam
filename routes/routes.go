@@ -22,8 +22,11 @@ func SetupRoutes(db *gorm.DB, conn *amqp.Connection) (*chi.Mux){
 		r.Use(middlewares.JWTMiddleware)
 		r.Get("/roles", app.GetRoles)
 		r.Get("/api/users/{id}/profile", app.GetUserProfile)
+	})
+	router.Group(func(r chi.Router) {
+		r.Use(middlewares.JWTMiddleware)
+		// r.Use(middlewares.AuthorizationMiddleware)
 		r.Post("/api/users/invite", app.InviteUser)
 	})
-
 	return router
 }

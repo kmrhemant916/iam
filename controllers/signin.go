@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/kmrhemant916/iam/authorization"
 	"github.com/kmrhemant916/iam/entities"
 	"github.com/kmrhemant916/iam/global"
 	"github.com/kmrhemant916/iam/helpers"
@@ -28,6 +29,7 @@ type Claims struct {
 	Username string
 	OrganizationID uuid.UUID
 	IsRoot bool
+	Groups []string
 	jwt.RegisteredClaims
 }
 
@@ -87,11 +89,36 @@ func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 		helpers.SendResponse(w, response, http.StatusUnauthorized)
 		return
 	}
-	expirationTime := time.Now().Add(60 * time.Minute)
+	rbac := &authorization.Rbac{
+		DB: app.DB,
+	}
+	var userGroups []entities.UserGroup
+	userGroupRepository := repositories.NewGenericRepository[entities.UserGroup](app.DB)
+	userGroupService := service.NewGenericService[entities.UserGroup](userGroupRepository)
+	err = userGroupService.FindMany(&userGroups, global.UserGroupFindQueryByUserID, userEntity.UserID)
+	if err != nil {
+		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
+		return
+	}
+	var groupIDs []uuid.UUID
+	for _, userGroup := range userGroups {
+		groupIDs = append(groupIDs, userGroup.GroupID)
+	}
+	var groups []string
+	for _, groupID := range groupIDs {
+		group, err := rbac.GetGroupNameUsingID(groupID)
+		if err != nil {
+			helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
+			return
+		}
+		groups = append(groups, group)
+	}
+	expirationTime := time.Now().Add(120 * time.Minute)
 	claims := &Claims{
 		Username: signinPayload.Email,
 		OrganizationID: userEntity.OrganizationID,
 		IsRoot: userEntity.IsRoot,
+		Groups: groups,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
@@ -99,10 +126,7 @@ func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(app.JWTKey)
 	if err != nil {
-		response := map[string]interface{}{
-			"message": "Internal server error",
-		}
-		helpers.SendResponse(w, response, http.StatusInternalServerError)
+		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 		return
 	}
 	response := map[string]interface{}{
@@ -113,4 +137,3 @@ func (app *App)Signin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
 }
-
