@@ -12,12 +12,9 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type contextKey string
-
 const (
 	ConfigPath = "config/config.yaml"
 	AuthHeader = "x-auth-token"
-	ClaimsKey contextKey = "claims"
 )
 
 func JWTMiddleware(next http.Handler) http.Handler {
@@ -49,7 +46,7 @@ func JWTMiddleware(next http.Handler) http.Handler {
 			helpers.SendResponse(w, response, http.StatusUnauthorized)
 			return
 		}
-		ctx := context.WithValue(r.Context(), ClaimsKey, claims)
+		ctx := context.WithValue(r.Context(), controllers.ClaimsKey, claims)
         next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

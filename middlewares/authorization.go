@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/kmrhemant916/iam/controllers"
@@ -15,7 +14,7 @@ const (
 
 func AuthorizationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(ClaimsKey).(*controllers.Claims)
+		claims, ok := r.Context().Value(controllers.ClaimsKey).(*controllers.Claims)
 		if !ok {
 			helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 			return
@@ -34,8 +33,7 @@ func AuthorizationMiddleware(next http.Handler) http.Handler {
 			helpers.SendResponse(w, response, http.StatusUnauthorized)
 			return
 		}
-		ctx := context.WithValue(r.Context(), ClaimsKey, claims)
-        next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r)
 	})
 }
 

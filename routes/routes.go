@@ -25,7 +25,7 @@ func SetupRoutes(db *gorm.DB, conn *amqp.Connection) (*chi.Mux){
 	})
 	router.Group(func(r chi.Router) {
 		r.Use(middlewares.JWTMiddleware)
-		// r.Use(middlewares.AuthorizationMiddleware)
+		r.Use(middlewares.AuthorizationMiddleware)
 		r.Post("/api/users/invite", app.InviteUser)
 	})
 	return router

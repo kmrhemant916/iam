@@ -87,6 +87,7 @@ func (app *App)InviteUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	claims, ok := r.Context().Value(ClaimsKey).(*Claims)
+	fmt.Println(claims)
 	if !ok {
 		fmt.Println("jkwqdnkwn")
 		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
