@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -18,12 +19,15 @@ import (
 	"gorm.io/gorm"
 )
 
+type contextKey string
+
 const (
 	PasswordLength = 10
 	PasswordNumDigits = 3
 	PasswordNumSymbols = 3
 	PasswordContainUpper = false
 	PasswordContainRepeat = false
+	ClaimsKey contextKey = "claims"
 )
 
 type InviteUserPayload struct {
@@ -82,8 +86,9 @@ func (app *App)InviteUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	claims, ok := r.Context().Value("claims").(*Claims)
+	claims, ok := r.Context().Value(ClaimsKey).(*Claims)
 	if !ok {
+		fmt.Println("jkwqdnkwn")
 		helpers.SendResponse(w, global.InternalServerErrorMessage, http.StatusInternalServerError)
 		return
 	}
