@@ -1,7 +1,8 @@
 package models
 
+import "github.com/google/uuid"
+
 type Group struct {
-	// gorm.Model
-	ID 	  uint `gorm:"primary_key;autoIncrement;" json:"id"`
-	Name  string `gorm:"unique" json:"name"`
+	GroupID uuid.UUID
+	Name    string
 }

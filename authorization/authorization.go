@@ -4,18 +4,13 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/kmrhemant916/iam/entities"
+	"github.com/kmrhemant916/iam/global"
 	"github.com/kmrhemant916/iam/models"
+	"github.com/kmrhemant916/iam/repositories"
+	"github.com/kmrhemant916/iam/service"
+	"github.com/kmrhemant916/iam/utils"
 	"gorm.io/gorm"
-)
-
-var (
-	ErrPermissionInUse     = errors.New("cannot delete assigned permission")
-	ErrPermissionNotFound  = errors.New("permission not found")
-	ErrRoleAlreadyAssigned = errors.New("this role is already assigned to the user")
-	ErrRoleInUse           = errors.New("cannot delete assigned role")
-	ErrRoleNotFound        = errors.New("role not found")
-	ErrGroupNotFound       = errors.New("group not found")
-	ErrUserNotFound        = errors.New("user not found")
 )
 
 type Rbac struct {
@@ -25,12 +20,18 @@ type Rbac struct {
 func (r *Rbac) CreateRole(roles []string) (error) {
 	for _, role := range roles {
 		var dbRole models.Role
-		res := r.DB.Where("name = ?", role).First(&dbRole)
-		if res.Error != nil {
-			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-				r.DB.Create(&models.Role{Name: role})
+		roleRepository := repositories.NewGenericRepository[entities.Role](r.DB)
+		roleService := service.NewGenericService[entities.Role](roleRepository)
+		_, err := roleService.FindOne((utils.RoleToEntity(&dbRole)), global.RoleFindQueryByName, role)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				newRole := models.Role{
+					ID: uuid.New(),
+					Name: role,
+				}
+				roleService.Create((utils.RoleToEntity(&newRole)))
 			} else {
-				return res.Error
+				return err
 			}
 		}
 	}
@@ -40,44 +41,66 @@ func (r *Rbac) CreateRole(roles []string) (error) {
 func (r *Rbac) CreatePermission(permissions []string) (error) {
 	for _, permission := range permissions {
 		var dbPermission models.Permission
-		res := r.DB.Where("name = ?", permission).First(&dbPermission)
-		if res.Error != nil {
-			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-				r.DB.Create(&models.Permission{Name: permission})
+		permissionRepository := repositories.NewGenericRepository[entities.Permission](r.DB)
+		permissionService := service.NewGenericService[entities.Permission](permissionRepository)
+		_, err := permissionService.FindOne((utils.PermissionToEntity(&dbPermission)), global.PermissionFindQueryByName, permission)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				newPermission := models.Permission{
+					ID: uuid.New(),
+					Name: permission,
+				}
+				permissionService.Create((utils.PermissionToEntity(&newPermission)))
 			} else {
-				return res.Error
+				return err
 			}
 		}
 	}
 	return nil
 }
 
-func (r *Rbac) AssignPermissions(roleName string, permNames []string) (error) {
+func (r *Rbac) AssignRolePermissions(roleName string, permNames []string) (error) {
 	var role models.Role
-	rRes := r.DB.Where("name = ?", roleName).First(&role)
-	if rRes.Error != nil {
-		if errors.Is(rRes.Error, gorm.ErrRecordNotFound) {
-			return ErrRoleNotFound
+	roleRepository := repositories.NewGenericRepository[entities.Role](r.DB)
+	roleService := service.NewGenericService[entities.Role](roleRepository)
+	roleEntity, err := roleService.FindOne((utils.RoleToEntity(&role)), global.RoleFindQueryByName, roleName)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return global.ErrRoleNotFound
+		} else {
+			return err
 		}
 	}
 	var perms []models.Permission
 	for _, permName := range permNames {
 		var perm models.Permission
-		rRes := r.DB.Where("name = ?", permName).First(&perm)
-		if rRes.Error != nil {
-			if errors.Is(rRes.Error, gorm.ErrRecordNotFound) {
-				return ErrPermissionNotFound
+		permissionRepository := repositories.NewGenericRepository[entities.Permission](r.DB)
+		permissionService := service.NewGenericService[entities.Permission](permissionRepository)
+		entitiy, err := permissionService.FindOne((utils.PermissionToEntity(&perm)), global.PermissionFindQueryByName, permName)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return global.ErrPermissionNotFound
+			} else {
+				return err
 			}
 		}
-		perms = append(perms, perm)
+		perms = append(perms, *utils.PermissionToModel(entitiy))
 	}
 	for _, perm := range perms {
 		var rolePerm models.RolePermission
-		rRes := r.DB.Where("role_id = ?", role.ID).Where("permission_id = ?", perm.ID).First(&rolePerm)
-		if rRes.Error != nil {
-			res := r.DB.Create(&models.RolePermission{RoleID: role.ID, PermissionID: perm.ID})
-			if res.Error != nil {
-				return res.Error
+		rolePermissionRepository := repositories.NewGenericRepository[entities.RolePermission](r.DB)
+		rolePermissionService := service.NewGenericService[entities.RolePermission](rolePermissionRepository)
+		_, err := rolePermissionService.FindOne((utils.RolePermissionToEntity(&rolePerm)), global.RolePermissionFindQueryByID, roleEntity.ID, perm.ID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				newRolePermission := models.RolePermission{
+					ID: uuid.New(),
+					RoleID: roleEntity.ID,
+					PermissionID: perm.ID,
+				}
+				rolePermissionService.Create(utils.RolePermissionToEntity(&newRolePermission))
+			} else {
+				return err
 			}
 		}
 	}
@@ -87,12 +110,18 @@ func (r *Rbac) AssignPermissions(roleName string, permNames []string) (error) {
 func (r *Rbac) CreateGroups(groups []string) (error) {
 	for _, group := range groups {
 		var dbGroup models.Group
-		res := r.DB.Where("name = ?", group).First(&dbGroup)
-		if res.Error != nil {
-			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-				r.DB.Create(&models.Group{Name: group})
+		groupRepository := repositories.NewGenericRepository[entities.Group](r.DB)
+		groupService := service.NewGenericService[entities.Group](groupRepository)
+		_, err := groupService.FindOne((utils.GroupToEntity(&dbGroup)), global.GroupFindQueryByName, group)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				newGroup := models.Group{
+					GroupID: uuid.New(),
+					Name:    group,
+				}
+				groupService.Create(utils.GroupToEntity(&newGroup))
 			} else {
-				return res.Error
+				return err
 			}
 		}
 	}
@@ -101,111 +130,219 @@ func (r *Rbac) CreateGroups(groups []string) (error) {
 
 func (r *Rbac) AssignGroupRoles(group string, roles []string) (error) {
 	var dbGroup models.Group
-	res := r.DB.Where("name = ?", group).First(&dbGroup)
-	if res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return ErrGroupNotFound
+	groupRepository := repositories.NewGenericRepository[entities.Group](r.DB)
+	groupService := service.NewGenericService[entities.Group](groupRepository)
+	groupEntity, err := groupService.FindOne((utils.GroupToEntity(&dbGroup)), global.GroupFindQueryByName, group)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return global.ErrGroupNotFound
+		} else {
+			return err
 		}
 	}
 	var dbRoles []models.Role
 	for _, role := range roles {
 		var dbRole models.Role
-		res := r.DB.Where("name = ?", role).First(&dbRole)
-		if res.Error != nil {
-			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-				return ErrRoleNotFound
+		roleRepository := repositories.NewGenericRepository[entities.Role](r.DB)
+		roleService := service.NewGenericService[entities.Role](roleRepository)
+		entitiy, err := roleService.FindOne((utils.RoleToEntity(&dbRole)), global.RoleFindQueryByName, role)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return global.ErrRoleNotFound
+			} else {
+				return err
 			}
 		}
-		dbRoles = append(dbRoles, dbRole)
+		dbRoles = append(dbRoles, *utils.RoleToModel(entitiy))
 	}
 	for _, dbRole := range dbRoles {
 		var groupRole models.GroupRole
-		result := r.DB.Where("role_id = ?", dbRole.ID).Where("group_id = ?", dbGroup.ID).First(&groupRole)
-		if result.Error != nil {
-			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				r.DB.Create(&models.GroupRole{GroupID: dbGroup.ID, RoleID: dbRole.ID})
+		groupRoleRepository := repositories.NewGenericRepository[entities.GroupRole](r.DB)
+		groupRoleService := service.NewGenericService[entities.GroupRole](groupRoleRepository)
+		_, err := groupRoleService.FindOne((utils.GroupRoleToEntity(&groupRole)), global.GroupRoleFindQueryByGroupRoleID, dbRole.ID, groupEntity.GroupID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				newGroupRole := models.GroupRole{
+					GroupRoleID: uuid.New(),
+					GroupID: groupEntity.GroupID,
+					RoleID: dbRole.ID,
+				}
+				groupRoleService.Create(utils.GroupRoleToEntity(&newGroupRole))
 			} else {
-				return result.Error
+				return err
 			}
 		}
 	}
 	return nil
 }
 
-func (r *Rbac) CheckGroupRole(groupID uint, roleName string) (bool, error) {
+func (r *Rbac) CheckGroupRole(groupID uuid.UUID, roleName string) (bool, error) {
+	_, err := r.CheckGroupExistenceUsingID(groupID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, global.ErrGroupNotFound
+		} else {
+			return false, err
+		}
+	}
 	var role models.Role
-	res := r.DB.Where("name = ?", roleName).First(&role)
-	if res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return false, ErrRoleNotFound
+	roleRepository := repositories.NewGenericRepository[entities.Role](r.DB)
+	roleService := service.NewGenericService[entities.Role](roleRepository)
+	roleEntity, err := roleService.FindOne((utils.RoleToEntity(&role)), global.RoleFindQueryByName, roleName)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, global.ErrRoleNotFound
+		} else {
+			return false, err
 		}
 	}
 	var groupRole models.GroupRole
-	res = r.DB.Where("group_id = ?", groupID).Where("role_id = ?", role.ID).First(&groupRole)
-	if res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+	groupRoleRepository := repositories.NewGenericRepository[entities.GroupRole](r.DB)
+	groupRoleService := service.NewGenericService[entities.GroupRole](groupRoleRepository)
+	_, err = groupRoleService.FindOne((utils.GroupRoleToEntity(&groupRole)), global.GroupRoleFindQueryByGroupRoleID, roleEntity.ID, groupID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, nil
 		}
 	}
 	return true, nil
 }
 
-func (r *Rbac) CheckGroupPermission(groupID uint, permName string) (bool, error) {
-	var groupRoles []models.GroupRole
-	res := r.DB.Where("user_id = ?", groupID).Find(&groupRoles)
-	if res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return false, nil
+func (r *Rbac) CheckGroupPermission(groupID uuid.UUID, permName string) (bool, error) {
+	_, err := r.CheckGroupExistenceUsingID(groupID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, global.ErrGroupNotFound
+		} else {
+			return false, err
 		}
-	}
-	var roleIDs []uint
-	for _, r := range groupRoles {
-		roleIDs = append(roleIDs, r.RoleID)
 	}
 	var perm models.Permission
-	res = r.DB.Where("name = ?", permName).First(&perm)
-	if res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return false, ErrPermissionNotFound
+	permissionRepository := repositories.NewGenericRepository[entities.Permission](r.DB)
+	permissionService := service.NewGenericService[entities.Permission](permissionRepository)
+	_, err = permissionService.FindOne((utils.PermissionToEntity(&perm)), global.PermissionFindQueryByName, permName)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, global.ErrPermissionNotFound
+		} else {
+			return false, err
 		}
 	}
-	var rolePermission models.RolePermission
-	res = r.DB.Where("role_id IN (?)", roleIDs).Where("permission_id = ?", perm.ID).First(&rolePermission)
-	if res.Error != nil {
-		return false, nil
+	var groupRole []entities.GroupRole
+	groupRoleRepository := repositories.NewGenericRepository[entities.GroupRole](r.DB)
+	groupRoleService := service.NewGenericService[entities.GroupRole](groupRoleRepository)
+	err = groupRoleService.FindMany(&groupRole, global.GroupRoleFindQueryByRoleID, groupID)
+	if err != nil {
+		return false, err
+	}
+	var roleIDs []uuid.UUID
+	for _, r := range groupRole {
+		roleIDs = append(roleIDs, r.RoleID)
+	}
+	var rolePerm models.RolePermission
+	rolePermissionRepository := repositories.NewGenericRepository[entities.RolePermission](r.DB)
+	rolePermissionService := service.NewGenericService[entities.RolePermission](rolePermissionRepository)
+	_, err = rolePermissionService.FindOne((utils.RolePermissionToEntity(&rolePerm)), global.RolePermissionFindQueryByWildcardRoleID, roleIDs, perm.ID)
+	if err != nil {
+		return false, err
 	}
 	return true, nil
 }
 
 func (r *Rbac) AssignGroups(userID uuid.UUID, groups []string) (error) {
 	var user models.User
-	res := r.DB.Where("id = ?", userID).First(&user)
-	if res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return ErrUserNotFound
+	userGroupRepository := repositories.NewGenericRepository[entities.User](r.DB)
+	userGroupService := service.NewGenericService[entities.User](userGroupRepository)
+	_, err := userGroupService.FindOne((utils.UserToEntity(&user)), global.UserFindQueryByID, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return global.ErrUserNotFound
+		} else {
+			return err
 		}
 	}
-	var groupIDs []uint
+	var groupIDs []uuid.UUID
 	for _, group := range groups {
 		var g models.Group
-		result := r.DB.Where("name = ?", group).First(&g)
-		if result.Error != nil {
-			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-				return ErrGroupNotFound
+		groupRepository := repositories.NewGenericRepository[entities.Group](r.DB)
+		groupService := service.NewGenericService[entities.Group](groupRepository)
+		entity, err := groupService.FindOne((utils.GroupToEntity(&g)), global.GroupFindQueryByName, group)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return global.ErrGroupNotFound
+			} else {
+				return err
 			}
 		}
-		groupIDs = append(groupIDs, g.ID)
+		groupIDs = append(groupIDs, entity.GroupID)
 	}
 	for _, groupID := range groupIDs {
 		var userGroup models.UserGroup
-		res := r.DB.Where("user_id = ? AND group_id = ?", user.UserID, groupID).First(&userGroup)
-		if res.Error != nil {
-			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-				r.DB.Create(&models.UserGroup{UserID: user.UserID, GroupID: groupID})
+		userGroupRepository := repositories.NewGenericRepository[entities.UserGroup](r.DB)
+		userGroupService := service.NewGenericService[entities.UserGroup](userGroupRepository)
+		_, err := userGroupService.FindOne((utils.UserGroupToEntity(&userGroup)), global.UserGroupFindQueryByID, userID, groupID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				newUserGroup := models.UserGroup{
+					UserGroupID: uuid.New(),
+					UserID: userID,
+					GroupID: groupID,
+				}
+				userGroupService.Create((utils.UserGroupToEntity(&newUserGroup)))
 			} else {
-				return res.Error
+				return err
 			}
 		}
 	}
 	return nil
+}
+
+func (r *Rbac) CheckGroupExistenceUsingID(groupID uuid.UUID) (bool, error) {
+	var group models.Group
+	groupRepository := repositories.NewGenericRepository[entities.Group](r.DB)
+	groupService := service.NewGenericService[entities.Group](groupRepository)
+	_, err := groupService.FindOne((utils.GroupToEntity(&group)), global.GroupFindQueryByID, groupID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, global.ErrGroupNotFound
+		} else {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func (r *Rbac) CheckGroupExistenceUsingName(groupName string) (bool, error) {
+	var group models.Group
+	groupRepository := repositories.NewGenericRepository[entities.Group](r.DB)
+	groupService := service.NewGenericService[entities.Group](groupRepository)
+	_, err := groupService.FindOne((utils.GroupToEntity(&group)), global.GroupFindQueryByName, groupName)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func (r *Rbac) GetGroupIDUsingName(groupName string) (uuid.UUID, error) {
+	var dbGroup models.Group
+	groupRepository := repositories.NewGenericRepository[entities.Group](r.DB)
+	groupService := service.NewGenericService[entities.Group](groupRepository)
+	groupEntity, err := groupService.FindOne((utils.GroupToEntity(&dbGroup)), global.GroupFindQueryByName, groupName)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	return groupEntity.GroupID, nil
+}
+
+func (r *Rbac) GetGroupNameUsingID(groupID uuid.UUID) (string, error) {
+	var group models.Group
+	groupRepository := repositories.NewGenericRepository[entities.Group](r.DB)
+	groupService := service.NewGenericService[entities.Group](groupRepository)
+	groupEntity, err := groupService.FindOne((utils.GroupToEntity(&group)), global.GroupFindQueryByID, groupID)
+	if err != nil {
+		return "", err
+	}
+	return groupEntity.Name, nil
 }

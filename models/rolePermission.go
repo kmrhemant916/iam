@@ -1,7 +1,9 @@
 package models
 
+import "github.com/google/uuid"
+
 type RolePermission struct {
-    ID           uint `json:"id"`
-    RoleID       uint `json:"role_id"`
-    PermissionID uint `json:"permission_id"`
+    ID           uuid.UUID
+    RoleID       uuid.UUID
+    PermissionID uuid.UUID
 }

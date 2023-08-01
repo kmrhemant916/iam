@@ -1,7 +1,9 @@
 package models
 
+import "github.com/google/uuid"
+
 type GroupRole struct {
-    ID           uint `json:"id"`
-    GroupID       uint `json:"group_id"`
-    RoleID uint `json:"role_id"`
+    GroupRoleID   uuid.UUID
+    GroupID       uuid.UUID
+    RoleID        uuid.UUID
 }

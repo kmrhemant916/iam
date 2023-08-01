@@ -7,6 +7,7 @@ import (
 type GenericService[T any] interface {
 	Create(entity *T) (error)
 	FindOne(entity *T, sqlQuery string, sqlQueryParams ...interface{}) (*T, error)
+	FindMany(entities *[]T, sqlQuery string, sqlQueryParams ...interface{}) (error)
 }
 
 type genericService[T any] struct {
@@ -27,4 +28,9 @@ func (s *genericService[T]) Create(entity *T) (error) {
 func (s *genericService[T]) FindOne(entity *T, sqlQuery string, sqlQueryParams ...interface{}) (*T, error) {
 	entity, err := s.genericRepository.FindOne(entity, sqlQuery, sqlQueryParams...)
 	return entity, err
+}
+
+func (s *genericService[T]) FindMany(entities *[]T, sqlQuery string, sqlQueryParams ...interface{}) (error) {
+	err := s.genericRepository.FindMany(entities, sqlQuery, sqlQueryParams...)
+	return err
 }

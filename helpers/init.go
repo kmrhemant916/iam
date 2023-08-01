@@ -32,14 +32,16 @@ func DatabaseMigration(db *gorm.DB) {
 }
 
 func Createtable(db *gorm.DB) {
-	db.AutoMigrate(models.Permission{})
-	db.AutoMigrate(models.Role{})
+	db.AutoMigrate(entities.Permission{})
+	db.AutoMigrate(entities.Role{})
 	db.AutoMigrate(models.RolePermission{})
 	db.AutoMigrate(entities.Organization{})
 	db.AutoMigrate(entities.User{})
-	db.AutoMigrate(models.Group{})
+	db.AutoMigrate(entities.Group{})
 	db.AutoMigrate(models.GroupRole{})
-	db.AutoMigrate(models.UserGroup{})
+	db.AutoMigrate(entities.UserGroup{})
+	db.Migrator().DropConstraint(entities.UserGroup{}, "fk_user_id")
+	db.Exec("ALTER TABLE user_groups ADD CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE")
 }
 
 func GetAbsPath(p string) (string, error) {

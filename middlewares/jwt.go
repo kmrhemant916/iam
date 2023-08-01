@@ -1,19 +1,22 @@
 package middlewares
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/kmrhemant916/iam/controllers"
 	"github.com/kmrhemant916/iam/helpers"
 	"gopkg.in/yaml.v2"
 )
+
 const (
 	ConfigPath = "config/config.yaml"
 	AuthHeader = "x-auth-token"
 )
+
 func JWTMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get(AuthHeader)
@@ -37,17 +40,20 @@ func JWTMiddleware(next http.Handler) http.Handler {
 			return jwtKey, nil
 		})
 		if err != nil || !token.Valid {
-			fmt.Println(err)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			response := map[string]interface{}{
+				"message": "Unauthorized",
+			}
+			helpers.SendResponse(w, response, http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), controllers.ClaimsKey, claims)
+        next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func GetJWTSecretKey() ([]byte, error) {
 	absPath, _ := helpers.GetAbsPath(ConfigPath)
-	data, err := ioutil.ReadFile(absPath)
+	data, err := os.ReadFile(absPath)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
